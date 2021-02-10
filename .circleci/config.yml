@@ -14,6 +14,7 @@ jobs:
           name: Build front-end
           command: |
             # Your code here
+            cd frontend
             npm i
             npm run lint
       - save_cache:
@@ -31,6 +32,7 @@ jobs:
           name: Back-end build
           command: |
              # Your code here
+             cd backend
              npm i
              npm run lint
       - save_cache:
