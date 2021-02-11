@@ -44,14 +44,13 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          keys: [frontend-test]
+          keys: [frontend-build]
       - run:
           name: front-end test
           command: |
              # Your code here
              cd frontend
-             npm i
-             npm test
+             npm run test
                 
   test-backend:
     docker:
@@ -59,14 +58,13 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          keys: [backend-test]
+          keys: [backend-build]
       - run:
           name: Back-end test
           command: |
              # Your code here
              cd backend
-             npm i
-             npm test
+             npm run test
 
   
 workflows:
