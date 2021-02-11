@@ -45,7 +45,8 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          keys: [frontend-build]
+          keys:
+            - frontend-build-{{ checksum "package-lock.json" }}
       - run:
           name: front-end test
           command: |
