@@ -67,6 +67,34 @@ jobs:
              # Your code here
              cd backend
              npm run test
+  scan-frontend:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - frontend-build-{{ checksum "package-lock.json" }}
+      - run:
+          name: front-end test
+          command: |
+             # Your code here
+             cd frontend
+             npm audit --audit-level=critical
+
+  scan-backend:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - restore_cache:
+          keys: [backend-build]
+      - run:
+          name: Back-end test
+          command: |
+             # Your code here
+             cd backend
+             npm audit --audit-level=critical
 
   
 workflows:
@@ -78,3 +106,7 @@ workflows:
           requires: [build-frontend]
       - test-backend:
           requires: [build-backend]
+      - scan-backend:
+          requires: [test-backend]
+      - scan-frontend:
+          requires: [test-frontend]
