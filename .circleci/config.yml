@@ -76,7 +76,7 @@ jobs:
           keys:
             - frontend-build-{{ checksum "package-lock.json" }}
       - run:
-          name: front-end test
+          name: Scan front end dependencies
           command: |
              # Your code here
              cd frontend
@@ -90,7 +90,7 @@ jobs:
       - restore_cache:
           keys: [backend-build]
       - run:
-          name: Back-end test
+          name: Scan backend dependencies
           command: |
              # Your code here
              cd backend
