@@ -1,6 +1,7 @@
 version: 2.1
 
-
+orbs:
+  slack: circleci/slack@4.2.1
             
 jobs:
   build-frontend:
@@ -18,6 +19,8 @@ jobs:
             cd frontend
             npm i
             npm run build
+      - slack/notify:
+          event: fail
       - save_cache:
           paths: [frontend/node_modules]
           key: frontend-build-{{ checksum "package-lock.json" }}
@@ -100,7 +103,8 @@ jobs:
 workflows:
   default:
     jobs:
-      - build-frontend
+      - build-frontend:
+          context: VikasContext
       - build-backend
       - test-frontend:
           requires: [build-frontend]

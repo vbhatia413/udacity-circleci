@@ -12,7 +12,7 @@ import { connect } from 'react-redux';
 import '../../../../style.local.css';
 import style from '../../../../style.local.css';
 import { RouteComponentProps } from 'react-router';
-import TagsInput from 'react-tagsinput';
+import1 TagsInput from 'react-tagsinput';
 import './react-tagsinput.css';
 import { SearchInput, SearchBar, Breadcrumb, Button } from 'app/components';
 import { CountryDropdown, RegionDropdown } from 'react-country-region-selector';
