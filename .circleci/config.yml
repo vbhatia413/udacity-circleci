@@ -2,6 +2,20 @@ version: 2.1
 
 orbs:
   slack: circleci/slack@4.2.1
+commands:
+  cleanup-environment:
+    description: Cleanup back-end and front-end cloudformation stacks given a workflow ID.
+    steps:
+      - run:
+          name: Cleanup environments
+          when: on_fail
+          command: |
+            # Delete files from bucket
+            aws s3 rm s3://udapeople-${CIRCLE_WORKFLOW_ID}/ --recursive
+            # Delete front end stack
+            aws cloudformation delete-stack --stack-name vikas-udacity-frontend-${CIRCLE_WORKFLOW_ID}
+            # Delete back end stack
+            aws cloudformation delete-stack --stack-name vikas-udacity-backend-${CIRCLE_WORKFLOW_ID}
             
 jobs:
   build-frontend:
@@ -112,7 +126,6 @@ jobs:
               --tags project=vikasudacityproject \
               --stack-name "vikas-udacity-backend-${CIRCLE_WORKFLOW_ID}" \
               --parameter-overrides ID="${CIRCLE_WORKFLOW_ID}"  
-              exit 1
       - run:
           name: Ensure front-end infrastructure exist
           command: |
@@ -121,17 +134,21 @@ jobs:
               --tags project=vikasudacityproject \
               --stack-name "vikas-udacity-frontend-${CIRCLE_WORKFLOW_ID}" \
               --parameter-overrides ID="${CIRCLE_WORKFLOW_ID}" 
-              exit 1
       - run:
-          name: Add back-end ip to ansible inventory
+          name: Add back-end ip to ansible inventory, use memstash
           command: |
-            # Your code here
-            exit 1
-      - persist_to_workspace:
-          root: ~/
-          paths:
-            - project/.circleci/ansible/inventory.txt
-      # Here's where you will add some code to rollback on failure
+            INSTANCE_IP=$(aws ec2 describe-instances \
+            --filters 'Name=tag:Name,Values=backend-*' \
+            --query "Reservations[*].Instances[*].PublicIpAddress" \
+            --output text)
+            echo ${INSTANCE_IP}
+            curl -H "Content-Type: text/plain" \
+               -H "token: ${CIRCLE_WORKFLOW_ID}" \
+               --request PUT \
+               --data ${INSTANCE_IP} \
+               https://api.memstash.io/values/instance_ip
+      # Here's some code to rollback on failure
+      - cleanup-environment
 
   
 workflows:
