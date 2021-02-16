@@ -12,7 +12,7 @@
 - name: "Get project/backend files from circleci server to local"
   become: true
   copy:
-    src: ~/project/backend/
+    src: /root/project/backend/
     dest: /home/ubuntu
 
 - name: make sure the latest npm is installed
@@ -40,7 +40,7 @@
 - name: "Get project/backend files from circleci server to local"
    become: true
    copy:
-    src: ~/project/backend/dist
+    src: /root/project/backend/dist
     dest: /home/ubuntu/backend/
 
 - name: "cd to backend dir"
