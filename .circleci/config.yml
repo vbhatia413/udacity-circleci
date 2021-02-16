@@ -207,8 +207,6 @@ jobs:
       - run:
           name: Run migrations
           command: |
-            echo printenv
-            printenv >> ./backend/.env
             cd backend
             npm run migrations > migrationOutput.txt
             cat migrationOutput.txt
