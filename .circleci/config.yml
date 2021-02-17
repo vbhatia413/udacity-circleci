@@ -335,12 +335,9 @@ jobs:
       - run:
           name: Backend smoke test.
           command: |
-            if curl -s "${API_URL}" | grep "ok"
-            then
-              return 0
-            else
-              return 1
-            fi
+            curl "${API_URL}" >> ./result.txt
+            cat ./result.txt
+            rm ./result.txt
       - run:
           name: Frontend smoke test.
           command: |
