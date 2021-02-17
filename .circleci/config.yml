@@ -331,14 +331,15 @@ jobs:
           command: |
             PUBLIC_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/instance_ip)
             export API_URL="https://${PUBLIC_IP}:3000/api/status"
+            echo "API URL:${API_URL}"
       - run:
           name: Backend smoke test.
           command: |
             if curl -s "${API_URL}" | grep "ok"
             then
-              return 1
-            else
               return 0
+            else
+              return 1
             fi
       - run:
           name: Frontend smoke test.
@@ -346,9 +347,9 @@ jobs:
             FRONTEND_URL="http://udapeople-${CIRCLE_WORKFLOW_ID}.s3-website.us-west-2.amazonaws.com/#/"
             if curl -s ${FRONTEND_URL} | grep "Welcome"
             then
-              return 1
-            else
               return 0
+            else
+              return 1
             fi
       - destroy-environment  
       - revert-migrations
