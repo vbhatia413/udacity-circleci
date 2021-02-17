@@ -327,14 +327,11 @@ jobs:
             apk add ansible
             pip3 install awscli
       - run:
-          name: Get backend url
+          name: Backend smoke test.
           command: |
             PUBLIC_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/instance_ip)
             export API_URL="https://${PUBLIC_IP}:3000/api/status"
             echo "API URL:${API_URL}"
-      - run:
-          name: Backend smoke test.
-          command: |
             curl "${API_URL}" >> ./result.txt
             cat ./result.txt
             rm ./result.txt
