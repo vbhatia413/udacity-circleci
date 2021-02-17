@@ -15,20 +15,6 @@
     src: /root/project/backend/
     dest: /home/ubuntu
 
-- name: make sure the latest npm is installed
-  become: true
-  command: npm install -g npm
-
-- name: "NPM install"
-  command: npm install
-  args:
-    chdir: /home/ubuntu
-
-- name: "NPM Run Build"
-  command: npm run build
-  args:
-    chdir: /home/ubuntu
-
 - name: "LS to verify the dist"
   become: true
   command: ls
