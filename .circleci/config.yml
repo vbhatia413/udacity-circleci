@@ -348,7 +348,7 @@ jobs:
             then
               return 1
             else
-              return 1
+              return 0
             fi
       - destroy-environment  
       - revert-migrations
