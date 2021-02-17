@@ -7,7 +7,7 @@ commands:
     description: Cleanup back-end and front-end cloudformation stacks given a workflow ID.
     steps:
       - run:
-          name: Cleanup environments
+          name: Destroy environment on failure
           when: on_fail
           command: |
             # Delete files from bucket
@@ -22,7 +22,7 @@ commands:
       # Add parameter here     
     steps:
       - run:
-          name: Revert migrations
+          name: Revert migrations on failure
           # Add when this will run
           when: on_fail
           command: |
