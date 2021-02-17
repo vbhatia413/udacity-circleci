@@ -28,19 +28,17 @@
 #     dest: /home/ubuntu/backend/
 
 - name: "cd to backend dir"
-  become: true
   command: cd /home/ubuntu/backend    
 
 - name: "run npm install"
-  become: true
   command: npm install
     
 - name: "run npm run build"
-  become: true
   command: npm run build
 
 - name: "PM2 to run back-end server"
   become: true
-  command: pm2 start npm -- run "start"
-  args:
-    chdir: /home/ubuntu
+  shell: |
+    cd /home/ubuntu/backend 
+    pm2 start npm --name backend -- start
+    pm2 ls
