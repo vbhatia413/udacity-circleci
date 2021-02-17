@@ -21,11 +21,11 @@
   args:
     chdir: /home/ubuntu
 
-- name: "second - Get project/backend files from circleci server to local"
-  become: true
-  copy:
-    src: /root/project/backend/dist
-    dest: /home/ubuntu/backend/
+# - name: "second - Get project/backend files from circleci server to local"
+#   become: true
+#   copy:
+#     src: /root/project/backend/dist
+#     dest: /home/ubuntu/backend/
 
 - name: "cd to backend dir"
   become: true
