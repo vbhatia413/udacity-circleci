@@ -3,7 +3,7 @@ version: 2.1
 orbs:
   slack: circleci/slack@4.2.1
 commands:
-  cleanup-environment:
+  destroy-environment:
     description: Cleanup back-end and front-end cloudformation stacks given a workflow ID.
     steps:
       - run:
@@ -32,9 +32,7 @@ commands:
             then
               cd ~/project/backend
               npm install
-              Add revert code here. You can find this in the Getting Started section.
               npm run migrations:revert
-              exit 1
             fi
             
 jobs:
@@ -169,7 +167,7 @@ jobs:
                --data ${INSTANCE_IP} \
                https://api.memstash.io/values/instance_ip
       # Here's some code to rollback on failure
-      - cleanup-environment
+      - destroy-environment
   configure-infrastructure:
     docker:
       - image: python:3.7-alpine3.11
@@ -205,7 +203,7 @@ jobs:
             cat ./inventory.txt
             export ANSIBLE_HOST_KEY_CHECKING=false
             ansible-playbook -i ./inventory.txt configure-server.yml
-      - cleanup-environment
+      - destroy-environment
   run-migrations:
     docker:
       - image: circleci/node:13.8.0
@@ -236,7 +234,7 @@ jobs:
             MIGRATION_TEST_RESPONSE=$(curl -H "token: migration_${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/migration_result)
             echo "memstash test migration result"
             echo ${MIGRATION_TEST_RESPONSE}
-      - cleanup-environment      
+      - destroy-environment      
 
   deploy-frontend:
     docker:
@@ -265,7 +263,7 @@ jobs:
           name: Deploy frontend objects
           command: |
             aws s3 cp ./frontend/dist s3://udapeople-${CIRCLE_WORKFLOW_ID}/ --recursive
-      - cleanup-environment  
+      - destroy-environment  
       - revert-migrations      
                     
   deploy-backend:
@@ -315,7 +313,7 @@ jobs:
             pwd
             cat ~/project/.circleci/ansible/inventory.txt
             ansible-playbook ~/project/.circleci/ansible/deploy-backend.yml -i ~/project/.circleci/ansible/inventory.txt
-      - cleanup-environment  
+      - destroy-environment  
       - revert-migrations
   smoke-test:
     docker:
@@ -352,7 +350,7 @@ jobs:
             else
               return 1
             fi
-      - cleanup-environment  
+      - destroy-environment  
       - revert-migrations
   
 workflows:
