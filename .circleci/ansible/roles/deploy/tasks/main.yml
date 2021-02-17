@@ -9,7 +9,7 @@
     name: ["nodejs", "npm"]
     update_cache: yes
 
-- name: "Get project/backend files from circleci server to local"
+- name: "first - Get project/backend files from circleci server to local"
   become: true
   copy:
     src: /root/project/backend/
@@ -20,13 +20,11 @@
   command: npm install -g npm
 
 - name: "NPM install"
-  # become: true
   command: npm install
   args:
     chdir: /home/ubuntu
 
 - name: "NPM Run Build"
-  # become: true
   command: npm run build
   args:
     chdir: /home/ubuntu
@@ -37,9 +35,9 @@
   args:
     chdir: /home/ubuntu
 
-- name: "Get project/backend files from circleci server to local"
-   become: true
-   copy:
+- name: "second - Get project/backend files from circleci server to local"
+  become: true
+  copy:
     src: /root/project/backend/dist
     dest: /home/ubuntu/backend/
 
