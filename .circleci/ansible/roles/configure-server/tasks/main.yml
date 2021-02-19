@@ -1,12 +1,20 @@
+- name: "update apt packages."
+  become: yes
+  apt:
+    update_cache: yes
+
 - name: "upgrade packages."
   become: true
   apt:
     upgrade: "yes"
+
 - name: "install dependencies."
   become: true
   apt:
     name: ["nodejs", "npm"]
+    state: latest
     update_cache: yes
+
 - name: "install pm2"
   become: true
   npm:
@@ -14,19 +22,3 @@
     global: yes
     production: yes
     state: present
-- name: Run migrations
-  shell: |
-    cd /home/ubuntu/project/backend
-    npm run migrations > migrationOutput.txt
-    cat migrationOutput.txt
-    echo grep -c "has been executed successfully" migrationOutput.txt
-    MIGRATION_RESULT=`grep -c "has been executed successfully" migrationOutput.txt`
-    echo $MIGRATION_RESULT
-    curl -H "Content-Type: text/plain" \
-      -H "token: migration_${CIRCLE_WORKFLOW_ID}" \
-      --request PUT \
-      --data ${MIGRATION_RESULT} \
-      https://api.memstash.io/values/migration_result
-    MIGRATION_TEST_RESPONSE=$(curl -H "token: migration_${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/migration_result)
-    echo "memstash test migration result"
-    echo ${MIGRATION_TEST_RESPONSE}

@@ -1,63 +1,45 @@
-
-- name: Create a directory if it does not exist
-  #become: true
-  ansible.builtin.file:
-    path: /home/ubuntu/project/backend
-    state: directory
-    mode: '0755'
-
-- name: "copy folder "
+- name: "upgrade packages."
   become: true
-  copy:
-    src: /root/project/backend/artifact.tar.gz
-    dest: /home/ubuntu/project/backend
-
-- name: "untar folder "
-  become: true
-  ansible.builtin.unarchive:
-    src: /home/ubuntu/project/backend/artifact.tar.gz
-    dest: /home/ubuntu/project/backend/
-    remote_src: yes
+  apt:
+    upgrade: "yes"
     
-- name: "update apt packages."
-  become: yes
-  apt:
-    update_cache: yes
-
-- name: "upgrade packages"
-  become: yes
-  apt:
-    upgrade: yes
-
-- name: remove dependencies that are no longer required
-  become: yes
-  apt:
-    autoremove: yes
-
 - name: "install dependencies."
-  become: yes
+  become: true
   apt:
     name: ["nodejs", "npm"]
-    state: latest
     update_cache: yes
 
-    
-- name: "install pm2"
+- name: Create directory
+  file:
+    path: /home/ubuntu/backend
+    state: directory
+
+- name: Transfer backend files to server
+  copy:
+    src: /root/project/backend
+    dest: /home/ubuntu/
+
+- name: "Update npm"
   become: true
-  npm:
-    name: pm2
-    global: yes
-    production: yes
-    state: present
+  shell: |
+    cd /home/ubuntu/backend
+    npm install -g npm@latest
+- name: "NPM install"
+  command: npm install
+  args:
+    chdir: /home/ubuntu/backend
     
+- name: "build package"
+  become: true
+  shell: |
+    cd /home/ubuntu/backend
+    npm run build
+    sudo cat .env
+    sudo npm run prestart:prod
     
 - name: Executing node
-  become: true  
+  become: true
   shell: |
-    cd /home/ubuntu/project/
-    ls -lart
-    cd /home/ubuntu/project/backend
-    ls -lart
+    cd /home/ubuntu/backend
     pm2 start npm --name backend -- start
     pm2 ls
-    sleep 120

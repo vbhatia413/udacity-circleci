@@ -165,75 +165,124 @@ jobs:
                -H "token: ${CIRCLE_WORKFLOW_ID}" \
                --request PUT \
                --data ${INSTANCE_IP} \
-               https://api.memstash.io/values/instance_ip
+               https://api.memstash.io/values/instance_ip_${CIRCLE_WORKFLOW_ID}
+            echo "[web]" > .circleci/ansible/inventory.txt
+            echo  $INSTANCE_IP >> .circleci/ansible/inventory.txt
+            cat  .circleci/ansible/inventory.txt
+      - persist_to_workspace:
+          root:  ~/
+          paths:
+            - project/.circleci/ansible/inventory.txt
       # Here's some code to rollback on failure
       - destroy-environment
+  # configure-infrastructure:
+  #   docker:
+  #     - image: python:3.7-alpine3.11
+  #   steps:
+  #     - checkout
+  #     - add_ssh_keys:
+  #         fingerprints: ["f5:cc:de:2b:33:1d:f5:14:4e:bc:b1:fd:d2:35:58:47"]
+  #     - run:
+  #         name: Install dependencies
+  #         command: |
+  #           apk add --no-cache curl
+  #           apk add --no-cache --upgrade bash
+  #           apk add --no-cache --update ansible
+  #           apk add --no-cache openssh-client
+  #     - run:
+  #         name: Configure server
+  #         command: |
+  #           echo ENVIRONMENT=production > "backend/.env"
+  #           echo TYPEORM_CONNECTION=postgres >> "backend/.env"
+  #           echo TYPEORM_MIGRATIONS_DIR=./src/migrations >> "backend/.env"
+  #           echo TYPEORM_ENTITIES=./src/modules/domain/**/*.entity.ts >> "backend/.env"
+  #           echo TYPEORM_MIGRATIONS=./src/migrations/*.ts >> "backend/.env"
+  #           echo TYPEORM_HOST=udacity-database-2.c8zmhuumyb6c.us-west-2.rds.amazonaws.com >> "backend/.env"
+  #           echo TYPEORM_PORT=5432 >> "backend/.env"
+  #           echo TYPEORM_USERNAME=postgres >> "backend/.env"
+  #           echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> "backend/.env"
+  #           echo TYPEORM_DATABASE=udacity_database_postgres >> "backend/.env"
+  #           INSTANCE_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/instance_ip_${CIRCLE_WORKFLOW_ID})
+  #           echo ${INSTANCE_IP}
+  #           cd .circleci/ansible/
+  #           ls
+  #           echo ${INSTANCE_IP} >> ./inventory.txt
+  #           cat ./inventory.txt
+  #           export ANSIBLE_HOST_KEY_CHECKING=false
+  #           ansible-playbook -i ./inventory.txt configure-server.yml
+  #     - destroy-environment
   configure-infrastructure:
     docker:
-      - image: python:3.7-alpine3.11
+      - image: python:3.7-alpine3.12
     steps:
       - checkout
       - add_ssh_keys:
-          fingerprints: ["f5:cc:de:2b:33:1d:f5:14:4e:bc:b1:fd:d2:35:58:47"]
+          fingerprints:
+             - f5:cc:de:2b:33:1d:f5:14:4e:bc:b1:fd:d2:35:58:47
+      - attach_workspace:
+          at: ~/
       - run:
           name: Install dependencies
           command: |
-            apk add --no-cache curl
-            apk add --no-cache --upgrade bash
-            apk add --no-cache --update ansible
-            apk add --no-cache openssh-client
+            apk add --update ansible
       - run:
           name: Configure server
           command: |
-            echo ENVIRONMENT=production > "backend/.env"
-            echo TYPEORM_CONNECTION=postgres >> "backend/.env"
-            echo TYPEORM_MIGRATIONS_DIR=./src/migrations >> "backend/.env"
-            echo TYPEORM_ENTITIES=./src/modules/domain/**/*.entity.ts >> "backend/.env"
-            echo TYPEORM_MIGRATIONS=./src/migrations/*.ts >> "backend/.env"
-            echo TYPEORM_HOST=udacity-database-2.c8zmhuumyb6c.us-west-2.rds.amazonaws.com >> "backend/.env"
-            echo TYPEORM_PORT=5432 >> "backend/.env"
-            echo TYPEORM_USERNAME=postgres >> "backend/.env"
-            echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> "backend/.env"
-            echo TYPEORM_DATABASE=udacity_database_postgres >> "backend/.env"
-            INSTANCE_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/instance_ip)
-            echo ${INSTANCE_IP}
-            cd .circleci/ansible/
-            ls
-            echo ${INSTANCE_IP} >> ./inventory.txt
-            cat ./inventory.txt
-            export ANSIBLE_HOST_KEY_CHECKING=false
-            ansible-playbook -i ./inventory.txt configure-server.yml
-      - destroy-environment
+            cd ~/project/.circleci/ansible
+            ansible-playbook -i inventory.txt configure-server.yml
+      # Here's where you will add some code to rollback on failure
   run-migrations:
     docker:
       - image: circleci/node:13.8.0
     steps:
-      # Checkout code from git
       - checkout
       - restore_cache:
-          keys: backend-build-${CIRCLE_WORKFLOW_ID}
+          keys: [backend-build-${CIRCLE_WORKFLOW_ID}]
+      - run:
+          name: awscli install
+          command: |
+            sudo apt-get -y -qq update
+            sudo apt-get -y -qq install python3
+            sudo apt-get -qq install awscli
       - run:
           name: Run migrations
+          working_directory: ./backend
           command: |
-            cd backend/
-            npm run migrations > migrationOutput.txt
-            cat migrationOutput.txt
-            echo "test"
-            MIGRATION_RESULT=`grep -c "No migrations are pending" migrationOutput.txt`
-            echo "test1"
-            echo $MIGRATION_RESULT
-            echo "test2"
-            curl -H "Content-Type: text/plain" \
-               -H "token: migration_${CIRCLE_WORKFLOW_ID}" \
-               --request PUT \
-               --data ${MIGRATION_RESULT} \
-               https://api.memstash.io/values/migration_result
-            echo "test3"
-            MIGRATION_TEST_RESPONSE=$(curl -H "token: migration_${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/migration_result)
-            echo "test4"
-            echo "memstash test migration result"
-            echo ${MIGRATION_TEST_RESPONSE}
-      - destroy-environment      
+            touch .env
+            echo ENVIROMENT=production > .env
+            echo TYPEORM_CONNECTION=postgres >> .env
+            echo TYPEORM_MIGRATIONS_DIR=./src/migrations >> .env
+            echo TYPEORM_ENTITIES=./src/modules/domain/**/*.entity.ts >> .env
+            echo TYPEORM_MIGRATIONS=./src/migrations/*.ts >> .env
+            echo TYPEORM_HOST=$TYPEORM_HOST >> .env
+            echo TYPEORM_PORT=$TYPEORM_PORT >> .env
+            echo TYPEORM_USERNAME=$TYPEORM_USERNAME >> .env
+            echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> .env
+            echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> .env
+            ls -latr
+            cat .env
+            npm i
+            echo "HOST: " $TYPEORM_HOST
+            echo "PWD: " $(pwd)
+            echo $TYPEORM_DATABASE
+            npm run migrations > migrationresult.txt
+            cat migrationresult.txt
+      - run:
+          name: Send migration results to memstash
+          command: |
+            #!/bin/bash
+            cd backend
+            cat migrationresult.txt
+            if [ $(grep -i "has been executed successfully" migrationresult.txt | wc -l) -ge 1 ]
+              then 
+              curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID}" --request PUT --data "Migration Successful" https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID}
+              curl -H "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID}
+            else
+              curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID}" --request PUT --data "Migration Failed" https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID}
+              curl -H "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID}
+            fi
+     # Here's where you will add some code to rollback on failure 
+     #- destroy-environment      
 
   deploy-frontend:
     docker:
@@ -249,7 +298,7 @@ jobs:
       - run:
           name: Get backend url
           command: |
-            PUBLIC_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/instance_ip)
+            PUBLIC_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/instance_ip_${CIRCLE_WORKFLOW_ID})
             echo "this is the ip being pulled:"
             echo $PUBLIC_IP
             echo "here is the api_url being set:"
@@ -262,56 +311,97 @@ jobs:
           name: Deploy frontend objects
           command: |
             aws s3 cp ./frontend/dist s3://udapeople-${CIRCLE_WORKFLOW_ID}/ --recursive
+      - persist_to_workspace:
+          root: .
+          paths:
+            - frontend/dist
       - destroy-environment  
       - revert-migrations      
                     
+  # deploy-backend:
+  #   docker:
+  #     - image: python:3.7-alpine3.11
+  #   steps:
+  #     - checkout
+  #     # Add ssh keys with fingerprint
+  #     - add_ssh_keys:
+  #         fingerprints: ["f5:cc:de:2b:33:1d:f5:14:4e:bc:b1:fd:d2:35:58:47"]
+  #     - attach_workspace:
+  #         at: ~/  
+  #     - run:
+  #         name: Install dependencies
+  #         command: |
+  #           apk add ansible
+  #           apk add curl
+  #           pip3 install awscli
+  #     - run:
+  #         name: Deploy backend
+  #         no_output_timeout: 15m
+  #         command: |
+  #           INSTANCE_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/instance_ip)
+  #           echo ${INSTANCE_IP}
+  #           cd .circleci/ansible/
+  #           echo ${INSTANCE_IP} >> ./inventory.txt
+  #           cat ./inventory.txt
+  #           # cd /root/project/
+  #           ls
+  #           pwd
+  #           cd ../..
+  #           pwd
+  #           echo ENVIRONMENT=production > "backend/.env"
+  #           echo TYPEORM_CONNECTION=postgres >> "backend/.env"
+  #           echo TYPEORM_MIGRATIONS_DIR=./src/migrations >> "backend/.env"
+  #           echo TYPEORM_ENTITIES=./src/modules/domain/**/*.entity.ts >> "backend/.env"
+  #           echo TYPEORM_MIGRATIONS=./src/migrations/*.ts >> "backend/.env"
+  #           echo TYPEORM_HOST=udacity-database-2.c8zmhuumyb6c.us-west-2.rds.amazonaws.com >> "backend/.env"
+  #           echo TYPEORM_PORT=5432 >> "backend/.env"
+  #           echo TYPEORM_USERNAME=postgres >> "backend/.env"
+  #           echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> "backend/.env"
+  #           echo TYPEORM_DATABASE=udacity_database_postgres >> "backend/.env"
+            
+  #           tar -C backend -czvf artifact.tar.gz .
+  #           cp -p artifact.tar.gz ~/project/backend/artifact.tar.gz
+  #           ls -ltr
+  #           pwd
+  #           cat ~/project/.circleci/ansible/inventory.txt
+  #           ansible-playbook ~/project/.circleci/ansible/deploy-backend.yml -i ~/project/.circleci/ansible/inventory.txt
+  #     - destroy-environment  
+  #     - revert-migrations
   deploy-backend:
     docker:
       - image: python:3.7-alpine3.11
+  # Make sure ubuntu is 20.04 in backend.yml or you will have issues with PM2. read .circleci/backend/files for more info
     steps:
       - checkout
-      # Add ssh keys with fingerprint
       - add_ssh_keys:
-          fingerprints: ["f5:cc:de:2b:33:1d:f5:14:4e:bc:b1:fd:d2:35:58:47"]
+          fingerprints:
+            - f5:cc:de:2b:33:1d:f5:14:4e:bc:b1:fd:d2:35:58:47
       - attach_workspace:
-          at: ~/  
+          at: ~/
       - run:
           name: Install dependencies
           command: |
-            apk add ansible
-            apk add curl
-            pip3 install awscli
+            apk add --update ansible tar gzip ansible nodejs npm less
+            pip install awscli
       - run:
           name: Deploy backend
-          no_output_timeout: 15m
           command: |
-            INSTANCE_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/instance_ip)
-            echo ${INSTANCE_IP}
-            cd .circleci/ansible/
-            echo ${INSTANCE_IP} >> ./inventory.txt
-            cat ./inventory.txt
-            # cd /root/project/
-            ls
+            [[ ! -d backend ]] && mkdir backend
+            backendenv="backend/.env"
+            echo ENVIROMENT=production > $backendenv
+            echo TYPEORM_CONNECTION=postgres >> $backendenv
+            echo TYPEORM_MIGRATIONS_DIR=./src/migrations >> $backendenv
+            echo TYPEORM_ENTITIES=./src/modules/domain/**/*.entity.ts >> $backendenv
+            echo TYPEORM_MIGRATIONS=./src/migrations/*.ts >> $backendenv
+            echo TYPEORM_HOST=$TYPEORM_HOST >> $backendenv
+            echo TYPEORM_PORT=$TYPEORM_PORT >> $backendenv
+            echo TYPEORM_USERNAME=$TYPEORM_USERNAME >> $backendenv
+            echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> $backendenv
+            echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> $backendenv
+            tar -cvf backend.tar backend
+            ANSIBLE_HOST_KEY_CHECKING=False
             pwd
-            cd ../..
-            pwd
-            echo ENVIRONMENT=production > "backend/.env"
-            echo TYPEORM_CONNECTION=postgres >> "backend/.env"
-            echo TYPEORM_MIGRATIONS_DIR=./src/migrations >> "backend/.env"
-            echo TYPEORM_ENTITIES=./src/modules/domain/**/*.entity.ts >> "backend/.env"
-            echo TYPEORM_MIGRATIONS=./src/migrations/*.ts >> "backend/.env"
-            echo TYPEORM_HOST=udacity-database-2.c8zmhuumyb6c.us-west-2.rds.amazonaws.com >> "backend/.env"
-            echo TYPEORM_PORT=5432 >> "backend/.env"
-            echo TYPEORM_USERNAME=postgres >> "backend/.env"
-            echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> "backend/.env"
-            echo TYPEORM_DATABASE=udacity_database_postgres >> "backend/.env"
-            
-            tar -C backend -czvf artifact.tar.gz .
-            cp -p artifact.tar.gz ~/project/backend/artifact.tar.gz
-            ls -ltr
-            pwd
-            cat ~/project/.circleci/ansible/inventory.txt
-            ansible-playbook ~/project/.circleci/ansible/deploy-backend.yml -i ~/project/.circleci/ansible/inventory.txt
+            ansible-playbook -i .circleci/ansible/inventory.txt .circleci/ansible/deploy-backend.yml
       - destroy-environment  
       - revert-migrations
   smoke-test:
@@ -328,24 +418,26 @@ jobs:
       - run:
           name: Backend smoke test.
           command: |
-            PUBLIC_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/instance_ip)
+            PUBLIC_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/instance_ip_${CIRCLE_WORKFLOW_ID})
             export API_URL="https://${PUBLIC_IP}:3030/api/status"
             echo "API URL:${API_URL}"
             curl "${API_URL}" >> ./result.txt
             cat ./result.txt
+            echo "Backend is running and hence proceeding"
             rm ./result.txt
       - run:
           name: Frontend smoke test.
           command: |
-            FRONTEND_URL="http://udapeople-${CIRCLE_WORKFLOW_ID}.s3-website.us-west-2.amazonaws.com/#/"
+            FRONTEND_URL="http://udapeople-${CIRCLE_WORKFLOW_ID}.s3-website.us-west-2.amazonaws.com"
             if curl -s ${FRONTEND_URL} | grep "Welcome"
             then
-              return 0
-            else
+              echo "Frontend is running"
               return 1
+            else
+              return 0
             fi
-      #- destroy-environment  
-      #- revert-migrations
+      - destroy-environment  
+      - revert-migrations
   
 workflows:
   default:
