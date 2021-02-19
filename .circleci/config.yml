@@ -97,7 +97,8 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          keys: [backend-build]
+          keys:
+            - backend-build-${CIRCLE_WORKFLOW_ID}
       - run:
           name: Back-end test
           command: |
@@ -125,7 +126,8 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          keys: [backend-build]
+          keys:
+            - backend-build-${CIRCLE_WORKFLOW_ID}
       - run:
           name: Scan backend dependencies
           command: |
@@ -237,7 +239,8 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          keys: [backend-build-${CIRCLE_WORKFLOW_ID}]
+          keys:
+            - backend-build-${CIRCLE_WORKFLOW_ID}
       - run:
           name: awscli install
           command: |
