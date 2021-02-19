@@ -1,19 +1,19 @@
 
-# - name: Create a directory if it does not exist
-#   #become: true
-#   ansible.builtin.file:
-#     path: /home/ubuntu/project/backend
-#     state: directory
-#     mode: '0755'
+- name: Create a directory if it does not exist
+  #become: true
+  ansible.builtin.file:
+    path: /home/ubuntu/project/backend
+    state: directory
+    mode: '0755'
 
-# - name: "copy folder "
-#   #become: true
-#   copy:
-#     src: /root/project/backend/artifact.tar.gz
-#     dest: /home/ubuntu/project/backend
+- name: "copy folder "
+  become: true
+  copy:
+    src: /root/project/backend/artifact.tar.gz
+    dest: /home/ubuntu/project/backend
 
 - name: "untar folder "
-  #become: true
+  become: true
   ansible.builtin.unarchive:
     src: /home/ubuntu/project/backend/artifact.tar.gz
     dest: /home/ubuntu/project/backend/
