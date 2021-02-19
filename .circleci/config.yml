@@ -218,20 +218,19 @@ jobs:
             cd backend/
             npm run migrations > migrationOutput.txt
             cat migrationOutput.txt
-          no_output_timeout: 20m
-      - run:
-          name: Send migration results to memstash
-          command: |
-            cd backend/
-            echo grep -c "has been executed successfully" migrationOutput.txt
-            MIGRATION_RESULT=`grep -c "has been executed successfully" migrationOutput.txt`
+            echo "test"
+            MIGRATION_RESULT=`grep -c "No migrations are pending" migrationOutput.txt`
+            echo "test1"
             echo $MIGRATION_RESULT
+            echo "test2"
             curl -H "Content-Type: text/plain" \
                -H "token: migration_${CIRCLE_WORKFLOW_ID}" \
                --request PUT \
                --data ${MIGRATION_RESULT} \
                https://api.memstash.io/values/migration_result
+            echo "test3"
             MIGRATION_TEST_RESPONSE=$(curl -H "token: migration_${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/migration_result)
+            echo "test4"
             echo "memstash test migration result"
             echo ${MIGRATION_TEST_RESPONSE}
       - destroy-environment      
