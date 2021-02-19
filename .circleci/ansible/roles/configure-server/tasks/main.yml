@@ -16,7 +16,7 @@
     state: present
 - name: Run migrations
   shell: |
-    cd /home/ubuntu/backend
+    cd /home/ubuntu/project/backend
     npm run migrations > migrationOutput.txt
     cat migrationOutput.txt
     echo grep -c "has been executed successfully" migrationOutput.txt

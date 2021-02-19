@@ -215,14 +215,14 @@ jobs:
       - run:
           name: Run migrations
           command: |
-            cd backend
+            cd project/backend/
             npm run migrations > migrationOutput.txt
             cat migrationOutput.txt
           no_output_timeout: 20m
       - run:
           name: Send migration results to memstash
           command: |
-            cd backend
+            cd project/backend/
             echo grep -c "has been executed successfully" migrationOutput.txt
             MIGRATION_RESULT=`grep -c "has been executed successfully" migrationOutput.txt`
             echo $MIGRATION_RESULT
