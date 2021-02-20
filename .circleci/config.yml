@@ -171,13 +171,13 @@ jobs:
                --request PUT \
                --data ${INSTANCE_IP} \
                https://api.memstash.io/values/instance_ip_${CIRCLE_WORKFLOW_ID}
-            echo "[web]" > .circleci/ansible/inventory.txt
-            echo  $INSTANCE_IP >> .circleci/ansible/inventory.txt
-            cat  .circleci/ansible/inventory.txt
-      - persist_to_workspace:
-          root:  ~/
-          paths:
-            - project/.circleci/ansible/inventory.txt
+      #       echo "[web]" > .circleci/ansible/inventory.txt
+      #       echo  $INSTANCE_IP >> .circleci/ansible/inventory.txt
+      #       cat  .circleci/ansible/inventory.txt
+      # - persist_to_workspace:
+      #     root:  ~/
+      #     paths:
+      #       - project/.circleci/ansible/inventory.txt
       # Here's some code to rollback on failure
       - destroy-environment
   # configure-infrastructure:
@@ -223,18 +223,26 @@ jobs:
       - checkout
       - add_ssh_keys:
           fingerprints: ["f5:cc:de:2b:33:1d:f5:14:4e:bc:b1:fd:d2:35:58:47"]
-      - attach_workspace:
-          at: ~/
+      # - attach_workspace:
+      #     at: ~/
       - run:
           name: Install dependencies
           command: |
-            apk add --update ansible
+            apk add --no-cache curl
+            apk add --no-cache --upgrade bash
+            apk add --no-cache --update ansible
+            apk add --no-cache openssh-client
       - run:
           name: Configure server
           command: |
-            cd ~/project/.circleci/ansible
-            ANSIBLE_HOST_KEY_CHECKING=False
-            ansible-playbook -i inventory.txt configure-server.yml
+            INSTANCE_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/instance_ip_${CIRCLE_WORKFLOW_ID})
+            echo ${INSTANCE_IP}
+            cd .circleci/ansible/
+            ls
+            echo ${INSTANCE_IP} >> ./inventory.txt
+            cat ./inventory.txt
+            export ANSIBLE_HOST_KEY_CHECKING=false
+            ansible-playbook -i ./inventory.txt configure-server.yml
       # Here's where you will add some code to rollback on failure
   run-migrations:
     docker:
@@ -324,91 +332,92 @@ jobs:
       - destroy-environment  
       - revert-migrations      
                     
-  # deploy-backend:
-  #   docker:
-  #     - image: python:3.7-alpine3.11
-  #   steps:
-  #     - checkout
-  #     # Add ssh keys with fingerprint
-  #     - add_ssh_keys:
-  #         fingerprints: ["f5:cc:de:2b:33:1d:f5:14:4e:bc:b1:fd:d2:35:58:47"]
-  #     - attach_workspace:
-  #         at: ~/  
-  #     - run:
-  #         name: Install dependencies
-  #         command: |
-  #           apk add ansible
-  #           apk add curl
-  #           pip3 install awscli
-  #     - run:
-  #         name: Deploy backend
-  #         no_output_timeout: 15m
-  #         command: |
-  #           INSTANCE_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/instance_ip)
-  #           echo ${INSTANCE_IP}
-  #           cd .circleci/ansible/
-  #           echo ${INSTANCE_IP} >> ./inventory.txt
-  #           cat ./inventory.txt
-  #           # cd /root/project/
-  #           ls
-  #           pwd
-  #           cd ../..
-  #           pwd
-  #           echo ENVIRONMENT=production > "backend/.env"
-  #           echo TYPEORM_CONNECTION=postgres >> "backend/.env"
-  #           echo TYPEORM_MIGRATIONS_DIR=./src/migrations >> "backend/.env"
-  #           echo TYPEORM_ENTITIES=./src/modules/domain/**/*.entity.ts >> "backend/.env"
-  #           echo TYPEORM_MIGRATIONS=./src/migrations/*.ts >> "backend/.env"
-  #           echo TYPEORM_HOST=udacity-database-2.c8zmhuumyb6c.us-west-2.rds.amazonaws.com >> "backend/.env"
-  #           echo TYPEORM_PORT=5432 >> "backend/.env"
-  #           echo TYPEORM_USERNAME=postgres >> "backend/.env"
-  #           echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> "backend/.env"
-  #           echo TYPEORM_DATABASE=udacity_database_postgres >> "backend/.env"
-            
-  #           tar -C backend -czvf artifact.tar.gz .
-  #           cp -p artifact.tar.gz ~/project/backend/artifact.tar.gz
-  #           ls -ltr
-  #           pwd
-  #           cat ~/project/.circleci/ansible/inventory.txt
-  #           ansible-playbook ~/project/.circleci/ansible/deploy-backend.yml -i ~/project/.circleci/ansible/inventory.txt
-  #     - destroy-environment  
-  #     - revert-migrations
   deploy-backend:
     docker:
       - image: python:3.7-alpine3.11
-  # Make sure ubuntu is 20.04 in backend.yml or you will have issues with PM2. read .circleci/backend/files for more info
     steps:
       - checkout
+      # Add ssh keys with fingerprint
       - add_ssh_keys:
           fingerprints: ["f5:cc:de:2b:33:1d:f5:14:4e:bc:b1:fd:d2:35:58:47"]
       - attach_workspace:
-          at: ~/
+          at: ~/  
       - run:
           name: Install dependencies
           command: |
-            apk add --update ansible tar gzip ansible nodejs npm less
-            pip install awscli
+            apk add ansible
+            apk add curl
+            pip3 install awscli
       - run:
           name: Deploy backend
+          no_output_timeout: 15m
           command: |
-            [[ ! -d backend ]] && mkdir backend
-            backendenv="backend/.env"
-            echo ENVIROMENT=production > $backendenv
-            echo TYPEORM_CONNECTION=postgres >> $backendenv
-            echo TYPEORM_MIGRATIONS_DIR=./src/migrations >> $backendenv
-            echo TYPEORM_ENTITIES=./src/modules/domain/**/*.entity.ts >> $backendenv
-            echo TYPEORM_MIGRATIONS=./src/migrations/*.ts >> $backendenv
-            echo TYPEORM_HOST=$TYPEORM_HOST >> $backendenv
-            echo TYPEORM_PORT=$TYPEORM_PORT >> $backendenv
-            echo TYPEORM_USERNAME=$TYPEORM_USERNAME >> $backendenv
-            echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> $backendenv
-            echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> $backendenv
-            tar -cvf backend.tar backend
-            ANSIBLE_HOST_KEY_CHECKING=False
+            INSTANCE_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/instance_ip_${CIRCLE_WORKFLOW_ID})
+            echo ${INSTANCE_IP}
+            cd .circleci/ansible/
+            echo ${INSTANCE_IP} >> ./inventory.txt
+            cat ./inventory.txt
+            # cd /root/project/
+            ls
             pwd
-            ansible-playbook -i .circleci/ansible/inventory.txt .circleci/ansible/deploy-backend.yml
+            cd ../..
+            pwd
+            echo ENVIRONMENT=production > "backend/.env"
+            echo TYPEORM_CONNECTION=postgres >> "backend/.env"
+            echo TYPEORM_MIGRATIONS_DIR=./src/migrations >> "backend/.env"
+            echo TYPEORM_ENTITIES=./src/modules/domain/**/*.entity.ts >> "backend/.env"
+            echo TYPEORM_MIGRATIONS=./src/migrations/*.ts >> "backend/.env"
+            echo TYPEORM_HOST=udacity-database-2.c8zmhuumyb6c.us-west-2.rds.amazonaws.com >> "backend/.env"
+            echo TYPEORM_PORT=5432 >> "backend/.env"
+            echo TYPEORM_USERNAME=postgres >> "backend/.env"
+            echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> "backend/.env"
+            echo TYPEORM_DATABASE=udacity_database_postgres >> "backend/.env"
+            
+            tar -C backend -czvf artifact.tar.gz .
+            cp -p artifact.tar.gz ~/project/backend/artifact.tar.gz
+            ls -ltr
+            pwd
+            ANSIBLE_HOST_KEY_CHECKING=False
+            cat ~/project/.circleci/ansible/inventory.txt
+            ansible-playbook ~/project/.circleci/ansible/deploy-backend.yml -i ~/project/.circleci/ansible/inventory.txt
       - destroy-environment  
       - revert-migrations
+  # deploy-backend:
+  #   docker:
+  #     - image: python:3.7-alpine3.11
+  # # Make sure ubuntu is 20.04 in backend.yml or you will have issues with PM2. read .circleci/backend/files for more info
+  #   steps:
+  #     - checkout
+  #     - add_ssh_keys:
+  #         fingerprints: ["f5:cc:de:2b:33:1d:f5:14:4e:bc:b1:fd:d2:35:58:47"]
+  #     - attach_workspace:
+  #         at: ~/
+  #     - run:
+  #         name: Install dependencies
+  #         command: |
+  #           apk add --update ansible tar gzip ansible nodejs npm less
+  #           pip install awscli
+  #     - run:
+  #         name: Deploy backend
+  #         command: |
+  #           [[ ! -d backend ]] && mkdir backend
+  #           backendenv="backend/.env"
+  #           echo ENVIROMENT=production > $backendenv
+  #           echo TYPEORM_CONNECTION=postgres >> $backendenv
+  #           echo TYPEORM_MIGRATIONS_DIR=./src/migrations >> $backendenv
+  #           echo TYPEORM_ENTITIES=./src/modules/domain/**/*.entity.ts >> $backendenv
+  #           echo TYPEORM_MIGRATIONS=./src/migrations/*.ts >> $backendenv
+  #           echo TYPEORM_HOST=$TYPEORM_HOST >> $backendenv
+  #           echo TYPEORM_PORT=$TYPEORM_PORT >> $backendenv
+  #           echo TYPEORM_USERNAME=$TYPEORM_USERNAME >> $backendenv
+  #           echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> $backendenv
+  #           echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> $backendenv
+  #           tar -cvf backend.tar backend
+  #           ANSIBLE_HOST_KEY_CHECKING=False
+  #           pwd
+  #           ansible-playbook -i .circleci/ansible/inventory.txt .circleci/ansible/deploy-backend.yml
+  #     - destroy-environment  
+  #     - revert-migrations
   smoke-test:
     docker:
       - image: python:3.7-alpine3.11
