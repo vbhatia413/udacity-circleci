@@ -433,11 +433,17 @@ jobs:
           name: Backend smoke test.
           command: |
             PUBLIC_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/instance_ip_${CIRCLE_WORKFLOW_ID})
-            export API_URL="https://${PUBLIC_IP}:3030/api/status"
+            export API_URL="http://${PUBLIC_IP}:3030/api/status"
             echo "API URL:${API_URL}"
-            curl -k "${API_URL}" >> ./result.txt
+            curl "${API_URL}" >> ./result.txt
             cat ./result.txt
-            echo "Backend is running and hence proceeding"
+            if curl -s ${API_URL} | grep "ok"
+            then
+              echo "Backend is running and hence proceeding"
+              return 0
+            else
+              return 1
+            fi
             rm ./result.txt
       - run:
           name: Frontend smoke test.
@@ -446,9 +452,9 @@ jobs:
             if curl -s ${FRONTEND_URL} | grep "Welcome"
             then
               echo "Frontend is running"
-              return 1
-            else
               return 0
+            else
+              return 1
             fi
       #- destroy-environment  
       #- revert-migrations
