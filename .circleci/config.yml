@@ -451,8 +451,8 @@ jobs:
             FRONTEND_URL="http://udapeople-${CIRCLE_WORKFLOW_ID}.s3-website.us-west-2.amazonaws.com"
             if curl -s ${FRONTEND_URL} | grep "Welcome"
             then
-              echo "Frontend is running"
-              return 0
+              echo "Frontend is running, but failed it intentionally"
+              return 1
             else
               return 1
             fi
