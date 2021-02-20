@@ -32,6 +32,7 @@ commands:
                npm install
                npm run migrations:revert
             fi 
+
             
 jobs:
   build-frontend:
@@ -426,6 +427,8 @@ jobs:
           command: |
             apk add curl
             apk add ansible
+            apk add nodejs
+            apk add npm
             pip3 install awscli
       - run:
           name: Backend smoke test.
@@ -456,6 +459,50 @@ jobs:
             fi
       - destroy-environment  
       - revert-migrations
+  cloudfront-update:
+    docker:
+      # Docker image here that supports AWS CLI
+      - image: amazon/aws-cli
+    steps:
+      # Checkout code from git
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            # your code here
+            yum -y install tar gzip
+      - run:
+          name: Update cloudfront distribution
+          command: |
+            # your code here
+            export OldWorkflowID=$(aws cloudformation list-exports \
+            --query "Exports[?Name=='WorkflowID'].Value" \
+            --no-paginate --output text)
+            
+            echo $OldWorkflowID > oldworkflowid.txt
+            cat oldworkflowid.txt
+            
+            export STACKS=$(aws cloudformation list-stacks \
+            --query "StackSummaries[*].StackName" \
+            --stack-status-filter CREATE_COMPLETE \
+            --no-paginate --output text) 
+            
+            aws cloudformation deploy \
+              --template-file .circleci/files/cloudfront.yml \
+              --stack-name vikas-udapeople-${CIRCLE_WORKFLOW_ID} \
+              --parameter-overrides WorkflowID="${CIRCLE_WORKFLOW_ID}" \
+              --tags project=udapeople
+            
+            echo $STACKS
+            echo $STACKS > stacks.txt
+            cat stacks.txt
+            
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - project/oldworkflowid.txt
+            - project/stacks.txt
+      # Here's where you will add some code to rollback on failure  
   
 workflows:
   default:
@@ -484,6 +531,8 @@ workflows:
           requires: [run-migrations]
       - smoke-test:
           requires: [deploy-backend, deploy-frontend]
+      - cloudfront-update:
+          requires: [smoke-test]
           #filters:
            # branches:
              # only: [test-feature-branch]
