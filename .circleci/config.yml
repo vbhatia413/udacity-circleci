@@ -435,7 +435,7 @@ jobs:
             PUBLIC_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/instance_ip_${CIRCLE_WORKFLOW_ID})
             export API_URL="https://${PUBLIC_IP}:3030/api/status"
             echo "API URL:${API_URL}"
-            curl "${API_URL}" >> ./result.txt
+            curl -k "${API_URL}" >> ./result.txt
             cat ./result.txt
             echo "Backend is running and hence proceeding"
             rm ./result.txt
@@ -450,8 +450,8 @@ jobs:
             else
               return 0
             fi
-      - destroy-environment  
-      - revert-migrations
+      #- destroy-environment  
+      #- revert-migrations
   
 workflows:
   default:
