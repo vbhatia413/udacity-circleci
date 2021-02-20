@@ -22,18 +22,16 @@ commands:
       # Add parameter here     
     steps:
       - run:
-          name: Revert migrations on failure
-          # Add when this will run
+          name: Revert migrations
           when: on_fail
           command: |
-            # Curl command here to see if there was a successful migration associated with the workflow id, store result in SUCCESS variable
-            MIGRATION_RESULT=$(curl -H "token: migration_${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/migration_result)
-            if(( ${MIGRATION_RESULT}==1 )); 
+            SUCCESS=`curl -H "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID}`
+            if [ "$SUCCESS" == "Migration Succeeded" ]; 
             then
-              cd ~/project/backend
-              npm install
-              npm run migrations:revert
-            fi
+               cd ~/project/backend
+               npm install
+               npm run migrations:revert
+            fi 
             
 jobs:
   build-frontend:
@@ -287,9 +285,9 @@ jobs:
             #!/bin/bash
             cd backend
             cat migrationresult.txt
-            if [ $(grep -i "has been executed successfully" migrationresult.txt | wc -l) -ge 1 ]
+            if [ $(grep -i "No migrations are pending" migrationresult.txt | wc -l) -ge 1 ]
               then 
-              curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID}" --request PUT --data "Migration Successful" https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID}
+              curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID}" --request PUT --data "Migration Succeeded" https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID}
               curl -H "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID}
             else
               curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID}" --request PUT --data "Migration Failed" https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID}
@@ -456,8 +454,8 @@ jobs:
             else
               return 1
             fi
-      #- destroy-environment  
-      #- revert-migrations
+      - destroy-environment  
+      - revert-migrations
   
 workflows:
   default:
