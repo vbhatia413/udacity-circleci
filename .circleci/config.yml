@@ -540,16 +540,19 @@ workflows:
       - build-frontend:
           context: VikasContext
       - build-backend
-      # - test-frontend:
-      #     requires: [build-frontend]
-      # - test-backend:
-      #     requires: [build-backend]
-      # - scan-backend:
-      #     requires: [test-backend]
-      # - scan-frontend:
-      #     requires: [test-frontend]
+      - test-frontend:
+          requires: [build-frontend]
+      - test-backend:
+          requires: [build-backend]
+      - scan-backend:
+          requires: [test-backend]
+      - scan-frontend:
+          requires: [test-frontend]
       - deploy-infrastructure:
           requires: [build-frontend, build-backend]
+          filters:
+            branches:
+              only: [master]        
           #[test-frontend, test-backend, scan-frontend, scan-backend]
       - configure-infrastructure:
           requires: [deploy-infrastructure]
