@@ -476,7 +476,7 @@ jobs:
           command: |
             # your code here
             export OldWorkflowID=$(aws cloudformation list-exports \
-            --query "Exports[?Name=='WorkflowID'].Value" \
+            --query "Exports[?Name=='WorkflowIDOld'].Value" \
             --no-paginate --output text)
             
             echo $OldWorkflowID > oldworkflowid.txt
