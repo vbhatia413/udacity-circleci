@@ -518,7 +518,7 @@ jobs:
           command: |
             # your code here
             export OldWorkflowID=$(aws cloudformation list-exports \
-            --query "Exports[?Name=='WorkflowIDNew'].Value" \
+            --query "Exports[?Name=='WorkflowIDOld'].Value" \
             --no-paginate --output text)
             export STACKS=$(aws cloudformation list-stacks \
             --query "StackSummaries[*].StackName" \
@@ -526,12 +526,14 @@ jobs:
             --no-paginate --output text) 
             echo "${STACKS[@]}"
             echo "OldWorkflowID is " ${OldWorkflowID}
+            echo "Test"
             if [[ "${STACKS[@]}" =~ ${OldWorkflowID} ]] && [ "${OldWorkflowID}" -ne "${CIRCLE_WORKFLOW_ID}" ]; then
               # your code here
               aws cloudformation delete-stack --stack-name "vikas-udapeople-${OldWorkflowID}-backend"
               aws s3 rm "s3://udapeople-${OldWorkflowID}" --recursive
               aws cloudformation delete-stack --stack-name "vikas-udapeople-${OldWorkflowID}-frontend"
-              
+            else
+              echo "No old workflow to cleanup"  
             fi
   
 workflows:
@@ -566,8 +568,8 @@ workflows:
           requires: [deploy-backend, deploy-frontend]
       - cloudfront-update:
           requires: [smoke-test]
-      #- cleanup:
-       #   requires: [cloudfront-update]
+      - cleanup:
+          requires: [cloudfront-update]
           #filters:
            # branches:
              # only: [test-feature-branch]
