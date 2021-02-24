@@ -315,15 +315,15 @@ jobs:
             echo "this is the ip being pulled:"
             echo $PUBLIC_IP
             echo "here is the api_url being set:"
-            echo "http://$PUBLIC_IP:3030"
-            export API_URL="http://$PUBLIC_IP:3030"
+            echo "http://ec2-54-190-192-208.us-west-2.compute.amazonaws.com:3030"
+            export API_URL="http://ec2-54-190-192-208.us-west-2.compute.amazonaws.com:3030"
             cd frontend
             npm install
             npm run build
       - run:
           name: Deploy frontend objects
           command: |
-            aws s3 cp ./frontend/dist s3://udapeople-${CIRCLE_WORKFLOW_ID}/ --recursive
+            aws s3 cp ./frontend/dist s3://udapeople-6c5f90f8-539b-4388-9109-dcf05532f787/ --recursive
       - persist_to_workspace:
           root: .
           paths:
@@ -539,33 +539,33 @@ jobs:
 workflows:
   default:
     jobs:
-      - build-frontend:
-          context: VikasContext
-      - build-backend
-      - test-frontend:
-          requires: [build-frontend]
-      - test-backend:
-          requires: [build-backend]
-      - scan-backend:
-          requires: [test-backend]
-      - scan-frontend:
-          requires: [test-frontend]
-      - deploy-infrastructure:
-          requires: [build-frontend, build-backend]
-          filters:
-            branches:
-              only: [master]        
-          #[test-frontend, test-backend, scan-frontend, scan-backend]
-      - configure-infrastructure:
-          requires: [deploy-infrastructure]
-      - run-migrations:
-          requires: [configure-infrastructure]
-      - deploy-frontend:
-          requires: [run-migrations]
-      - deploy-backend:
-          requires: [run-migrations]
-      - smoke-test:
-          requires: [deploy-backend, deploy-frontend]
+      # - build-frontend:
+      #     context: VikasContext
+      # - build-backend
+      # - test-frontend:
+      #     requires: [build-frontend]
+      # - test-backend:
+      #     requires: [build-backend]
+      # - scan-backend:
+      #     requires: [test-backend]
+      # - scan-frontend:
+      #     requires: [test-frontend]
+      # - deploy-infrastructure:
+      #     #requires: [build-frontend, build-backend]
+      #       filters:
+      #        branches:
+      #          only: [master]        
+      #     #[test-frontend, test-backend, scan-frontend, scan-backend]
+      # - configure-infrastructure:
+      #     requires: [deploy-infrastructure]
+      # - run-migrations:
+      #     requires: [configure-infrastructure]
+      - deploy-frontend
+      #     requires: [run-migrations]
+      # - deploy-backend:
+      #     requires: [run-migrations]
+      # - smoke-test:
+      #     requires: [deploy-backend, deploy-frontend]
       #- cloudfront-update:
           #requires: [smoke-test]
       #- cleanup:
