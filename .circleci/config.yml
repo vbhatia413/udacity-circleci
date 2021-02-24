@@ -148,7 +148,7 @@ jobs:
               --template-file .circleci/files/backend.yml \
               --tags project=vikasudacityproject \
               --stack-name "vikas-udacity-backend-${CIRCLE_WORKFLOW_ID}" \
-              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID}"  
+              --parameter-overrides ID="green"  
       - run:
           name: Ensure front-end infrastructure exist
           command: |
@@ -161,7 +161,7 @@ jobs:
           name: Add back-end ip to ansible inventory, use memstash
           command: |
             INSTANCE_IP=$(aws ec2 describe-instances \
-            --filters 'Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID}' \
+            --filters 'Name=tag:Name,Values=backend-green' \
             --query "Reservations[*].Instances[*].PublicDnsName" \
             --output text)
             echo ${INSTANCE_IP}
