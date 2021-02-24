@@ -315,8 +315,8 @@ jobs:
             echo "this is the ip being pulled:"
             echo $PUBLIC_IP
             echo "here is the api_url being set:"
-            echo "https://$PUBLIC_IP:3030"
-            export API_URL="https://$PUBLIC_IP:3030"
+            echo "http://$PUBLIC_IP:3030"
+            export API_URL="http://$PUBLIC_IP:3030"
             cd frontend
             npm install
             npm run build
